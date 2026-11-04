@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if tx else 'Add' }} transaction · Smart Expense Tracker{% endblock %}
+{% block content %}
+{% set f = request.form if request.method == 'POST' else {} %}
+{% set cur_type = f.get('type') or preset_type %}
+{% set cur_cat = (f.get('category_id') or (tx.category_id if tx else ''))|string %}
+<div class="auth-card card wide">
+  <h1>{{ 'Edit' if tx else 'Add' }} transaction</h1>
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="type-toggle">
+      <label><input type="radio" name="type" value="expense" {{ 'checked' if cur_type == 'expense' }}> Expense</label>
+      <label><input type="radio" name="type" value="income" {{ 'checked' if cur_type == 'income' }}> Income</label>
+    </div>
+
+    <label>Amount ({{ currency }})
+      <input type="number" name="amount" step="0.01" min="0.01" required
+             value="{{ f.get('amount') or (tx.amount if tx else '') }}">
+    </label>
+
+    <label>Category
+      <select name="category_id" id="category" required>
+        {% for c in categories %}
+          <option value="{{ c.id }}" data-type="{{ c.type }}" {{ 'selected' if cur_cat == c.id|string }}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <label>Date
+      <input type="date" name="date" required value="{{ f.get('date') or (tx.date.isoformat() if tx else today) }}">
+    </label>
+
+    <label>Description <span class="muted">(optional)</span>
+      <input type="text" name="description" maxlength="200" value="{{ f.get('description') or (tx.description if tx else '') }}">
+    </label>
+
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">{{ 'Save changes' if tx else 'Add transaction' }}</button>
+      <a class="btn btn-ghost" href="{{ url_for('transactions') }}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const select = document.getElementById('category');
+  const radios = document.querySelectorAll('input[name="type"]');
+  function syncCategories() {
+    const type = document.querySelector('input[name="type"]:checked').value;
+    let firstVisible = null;
+    [...select.options].forEach(o => {
+      const show = o.dataset.type === type;
+      o.hidden = !show;
+      o.disabled = !show;
+      if (show && !firstVisible) firstVisible = o;
+    });
+    const cur = select.options[select.selectedIndex];
+    if (!cur || cur.disabled) select.value = firstVisible ? firstVisible.value : '';
+  }
+  radios.forEach(r => r.addEventListener('change', syncCategories));
+  syncCategories();
+</script>
+{% endblock %}

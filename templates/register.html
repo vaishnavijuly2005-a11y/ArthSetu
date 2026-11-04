@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Register · ArthSetu{% endblock %}
+{% block content %}
+<div class="auth-card card">
+  <h1>Create your account</h1>
+  <p class="muted">Start tracking income and expenses in a minute.</p>
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Full name
+      <input type="text" name="name" required maxlength="80" value="{{ request.form.get('name', '') }}">
+    </label>
+    <label>Email
+      <input type="email" name="email" required value="{{ request.form.get('email', '') }}">
+    </label>
+    <label>Password <span class="muted">(8+ chars, upper, lower, number, symbol)</span>
+      <input type="password" name="password" required minlength="8" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}" title="Use at least 8 characters with uppercase, lowercase, a number, and a special character.">
+    </label>
+    <label>Confirm password
+      <input type="password" name="confirm" required minlength="8">
+    </label>
+    <button class="btn btn-primary btn-block" type="submit">Register</button>
+  </form>
+  <p class="muted center">Already registered? <a href="{{ url_for('login') }}">Log in</a></p>
+</div>
+{% endblock %}

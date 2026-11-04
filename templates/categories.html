@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Categories · Smart Expense Tracker{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Categories</h1></div>
+
+<form method="post" class="card filters">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <label>New category
+    <input type="text" name="name" maxlength="60" required placeholder="e.g. Groceries">
+  </label>
+  <label>Type
+    <select name="type">
+      <option value="expense">Expense</option>
+      <option value="income">Income</option>
+    </select>
+  </label>
+  <div class="filter-actions"><button class="btn btn-primary" type="submit">Add</button></div>
+</form>
+
+<section class="grid-2">
+  {% for kind in ['expense', 'income'] %}
+  <div class="card">
+    <h2>{{ kind|capitalize }} categories</h2>
+    <ul class="cat-list">
+      {% for c in categories if c.type == kind %}
+        <li>
+          <span class="pill pill-{{ kind }}">{{ c.name }}</span>
+          <form method="post" action="{{ url_for('delete_category', cat_id=c.id) }}" onsubmit="return confirm('Delete this category?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="link-danger">Delete</button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endfor %}
+</section>
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Monthly report · Smart Expense Tracker{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Monthly report</h1>
+  <form method="get" class="month-nav">
+    <a class="btn btn-ghost" href="{{ url_for('report', month=prev_ym) }}">←</a>
+    <input type="month" name="month" value="{{ ym }}" onchange="this.form.submit()">
+    <a class="btn btn-ghost" href="{{ url_for('report', month=next_ym) }}">→</a>
+  </form>
+</div>
+
+<h2 class="month-title">{{ month_label }}</h2>
+
+<section class="stats four">
+  <div class="card stat">
+    <span class="muted">Income</span>
+    <strong class="pos">{{ currency }}{{ totals.income|money }}</strong>
+    <small class="muted">Last month {{ currency }}{{ prev.income|money }}</small>
+  </div>
+  <div class="card stat">
+    <span class="muted">Expenses</span>
+    <strong class="neg">{{ currency }}{{ totals.expense|money }}</strong>
+    <small class="muted">Last month {{ currency }}{{ prev.expense|money }}</small>
+  </div>
+  <div class="card stat">
+    <span class="muted">Saved</span>
+    <strong class="{{ 'pos' if totals.balance >= 0 else 'neg' }}">{{ currency }}{{ totals.balance|money }}</strong>
+    <small class="muted">{{ tx_count }} transaction{{ '' if tx_count == 1 else 's' }}</small>
+  </div>
+  <div class="card stat">
+    <span class="muted">Savings rate</span>
+    <strong>{% if savings_rate is not none %}{{ '%.1f'|format(savings_rate) }}%{% else %}—{% endif %}</strong>
+    <small class="muted">{% if biggest %}Biggest expense: {{ biggest.category.name }} ({{ currency }}{{ biggest.amount|money }}){% else %}No expenses{% endif %}</small>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Daily spending</h2>
+  <div class="chart-box"><canvas id="dailyChart"></canvas></div>
+</section>
+
+<section class="grid-2">
+  {% for title, rows, total, cls in [('Expenses by category', expense_cats, totals.expense, 'neg'), ('Income by source', income_cats, totals.income, 'pos')] %}
+  <div class="card">
+    <h2>{{ title }}</h2>
+    {% if rows %}
+    <table>
+      <thead><tr><th>Category</th><th class="num">Amount</th><th class="num">Share</th></tr></thead>
+      <tbody>
+      {% for name, amount in rows %}
+        <tr>
+          <td>{{ name }}</td>
+          <td class="num {{ cls }}">{{ currency }}{{ amount|money }}</td>
+          <td class="num">{{ '%.0f'|format(amount / total * 100) }}%</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+      <p class="muted">No data for this month.</p>
+    {% endif %}
+  </div>
+  {% endfor %}
+</section>
+
+<p><a href="{{ url_for('transactions', month=ym) }}">See all transactions for {{ month_label }} →</a></p>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script>
+  new Chart(document.getElementById('dailyChart'), {
+    type: 'bar',
+    data: {
+      labels: {{ day_labels|tojson }},
+      datasets: [{ label: 'Expenses', data: {{ day_values|tojson }}, backgroundColor: '#ef4444' }]
+    },
+    options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+  });
+</script>
+{% endblock %}

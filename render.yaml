@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: smart-expense-tracker
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: CURRENCY_SYMBOL
+        value: "₹"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: expense-db
+          property: connectionString
+
+databases:
+  - name: expense-db
+    plan: free

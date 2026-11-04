@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · Smart Expense Tracker{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Dashboard</h1>
+  <div>
+    <a class="btn btn-income" href="{{ url_for('add_transaction', type='income') }}">+ Income</a>
+    <a class="btn btn-expense" href="{{ url_for('add_transaction', type='expense') }}">+ Expense</a>
+  </div>
+</div>
+
+<section class="stats">
+  <div class="card stat">
+    <span class="muted">Total income</span>
+    <strong class="pos">{{ currency }}{{ overall.income|money }}</strong>
+  </div>
+  <div class="card stat">
+    <span class="muted">Total expenses</span>
+    <strong class="neg">{{ currency }}{{ overall.expense|money }}</strong>
+  </div>
+  <div class="card stat">
+    <span class="muted">Balance</span>
+    <strong class="{{ 'pos' if overall.balance >= 0 else 'neg' }}">{{ currency }}{{ overall.balance|money }}</strong>
+  </div>
+</section>
+
+<section class="card">
+  <h2>{{ month_label }}</h2>
+  <div class="month-line">
+    <span>Income <b class="pos">{{ currency }}{{ this_month.income|money }}</b></span>
+    <span>Expenses <b class="neg">{{ currency }}{{ this_month.expense|money }}</b></span>
+    <span>Net <b class="{{ 'pos' if this_month.balance >= 0 else 'neg' }}">{{ currency }}{{ this_month.balance|money }}</b></span>
+  </div>
+</section>
+
+<section class="grid-2">
+  <div class="card">
+    <h2>Spending by category</h2>
+    {% if cat_values %}
+      <div class="chart-box"><canvas id="catChart"></canvas></div>
+    {% else %}
+      <p class="muted">No expenses recorded this month yet.</p>
+    {% endif %}
+  </div>
+  <div class="card">
+    <h2>Last 6 months</h2>
+    <div class="chart-box"><canvas id="trendChart"></canvas></div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="page-head tight">
+    <h2>Recent transactions</h2>
+    <a href="{{ url_for('transactions') }}">View all →</a>
+  </div>
+  {% if recent %}
+  <table>
+    <thead><tr><th>Date</th><th>Category</th><th>Description</th><th class="num">Amount</th></tr></thead>
+    <tbody>
+    {% for t in recent %}
+      <tr>
+        <td>{{ t.date.strftime('%d %b %Y') }}</td>
+        <td><span class="pill pill-{{ t.type }}">{{ t.category.name }}</span></td>
+        <td>{{ t.description or '—' }}</td>
+        <td class="num {{ 'pos' if t.type == 'income' else 'neg' }}">{{ '+' if t.type == 'income' else '−' }}{{ currency }}{{ t.amount|money }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p class="muted">Nothing here yet. Add your first income or expense above.</p>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script>
+  const palette = ['#2563eb','#f59e0b','#10b981','#ef4444','#8b5cf6','#06b6d4','#ec4899','#84cc16','#64748b'];
+  const catLabels = {{ cat_labels|tojson }};
+  if (catLabels.length) {
+    new Chart(document.getElementById('catChart'), {
+      type: 'doughnut',
+      data: { labels: catLabels, datasets: [{ data: {{ cat_values|tojson }}, backgroundColor: palette }] },
+      options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+    });
+  }
+  new Chart(document.getElementById('trendChart'), {
+    type: 'bar',
+    data: {
+      labels: {{ trend_labels|tojson }},
+      datasets: [
+        { label: 'Income', data: {{ trend_income|tojson }}, backgroundColor: '#10b981' },
+        { label: 'Expenses', data: {{ trend_expense|tojson }}, backgroundColor: '#ef4444' }
+      ]
+    },
+    options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+  });
+</script>
+{% endblock %}

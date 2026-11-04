@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Transactions · Smart Expense Tracker{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Transaction history</h1>
+  <a class="btn btn-primary" href="{{ url_for('add_transaction') }}">+ Add transaction</a>
+</div>
+
+<form method="get" class="card filters">
+  <label>Month
+    <input type="month" name="month" value="{{ filters.month }}">
+  </label>
+  <label>Type
+    <select name="type">
+      <option value="">All</option>
+      <option value="income" {{ 'selected' if filters.type == 'income' }}>Income</option>
+      <option value="expense" {{ 'selected' if filters.type == 'expense' }}>Expense</option>
+    </select>
+  </label>
+  <label>Category
+    <select name="category">
+      <option value="">All</option>
+      {% for c in categories %}
+        <option value="{{ c.id }}" {{ 'selected' if filters.category == c.id }}>{{ c.name }} ({{ c.type }})</option>
+      {% endfor %}
+    </select>
+  </label>
+  <div class="filter-actions">
+    <button class="btn btn-primary" type="submit">Filter</button>
+    <a class="btn btn-ghost" href="{{ url_for('transactions') }}">Reset</a>
+  </div>
+</form>
+
+<div class="card">
+  <p class="muted">
+    Showing {{ pagination.total }} transaction{{ '' if pagination.total == 1 else 's' }} ·
+    Income <b class="pos">{{ currency }}{{ filtered_totals.income|money }}</b> ·
+    Expenses <b class="neg">{{ currency }}{{ filtered_totals.expense|money }}</b>
+  </p>
+  {% if pagination.items %}
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Date</th><th>Type</th><th>Category</th><th>Description</th><th class="num">Amount</th><th></th></tr></thead>
+    <tbody>
+    {% for t in pagination.items %}
+      <tr>
+        <td>{{ t.date.strftime('%d %b %Y') }}</td>
+        <td>{{ t.type|capitalize }}</td>
+        <td><span class="pill pill-{{ t.type }}">{{ t.category.name }}</span></td>
+        <td>{{ t.description or '—' }}</td>
+        <td class="num {{ 'pos' if t.type == 'income' else 'neg' }}">{{ '+' if t.type == 'income' else '−' }}{{ currency }}{{ t.amount|money }}</td>
+        <td class="actions">
+          <a href="{{ url_for('edit_transaction', tx_id=t.id) }}">Edit</a>
+          <form method="post" action="{{ url_for('delete_transaction', tx_id=t.id) }}" onsubmit="return confirm('Delete this transaction?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="link-danger">Delete</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+
+  {% if pagination.pages > 1 %}
+  <div class="pager">
+    {% if pagination.has_prev %}
+      <a href="{{ url_for('transactions', page=pagination.prev_num, month=filters.month, type=filters.type, category=filters.category) }}">← Prev</a>
+    {% endif %}
+    <span class="muted">Page {{ pagination.page }} of {{ pagination.pages }}</span>
+    {% if pagination.has_next %}
+      <a href="{{ url_for('transactions', page=pagination.next_num, month=filters.month, type=filters.type, category=filters.category) }}">Next →</a>
+    {% endif %}
+  </div>
+  {% endif %}
+  {% else %}
+    <p class="muted">No transactions match these filters.</p>
+  {% endif %}
+</div>
+{% endblock %}
